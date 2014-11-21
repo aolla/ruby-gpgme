@@ -48,6 +48,9 @@ module GPGME
     #     signers. Must be an array of sign identifiers.
     #   * +:output+ if specified, it will write the output into it. It will be
     #     converted to a {GPGME::Data} object, so it could be a file for example.
+    #   * +:filename+ if specified will set the embedded file name of the
+    #     underlying {GPGME::Data} object. See Gnupg option --set-filename
+    #     for additional information.
     #   * Any other option accepted by {GPGME::Ctx.new}
     #
     # @return [GPGME::Data] a {GPGME::Data} object that can be read.
@@ -73,6 +76,11 @@ module GPGME
     #  file = File.open("signed.sec","w+")
     #  crypto.encrypt "Hello", :output => file # output written to signed.sec
     #
+    # @example writing to a file and specifying the embedded file name
+    #  file = File.open("encrypted.gpg", "w+")
+    #  opts = { :output => file, :filename => "the_data.txt" }
+    #  crypto.encrypt "Hello", opts
+    #
     # @raise [GPGME::Error::General] when trying to encrypt with a key that is
     #   not trusted, and +:always_trust+ wasn't specified
     #
@@ -83,6 +91,9 @@ module GPGME
       cipher_data = Data.new(options[:output])
       keys        = Key.find(:public, options[:recipients])
       keys        = nil if options[:symmetric]
+
+      plain_data.filename  = options[:filename] unless options[:filename].nil?
+      cipher_data.filename = options[:filename] unless options[:filename].nil?
 
       flags = 0
       flags |= GPGME::ENCRYPT_ALWAYS_TRUST if options[:always_trust]
@@ -209,6 +220,9 @@ module GPGME
     #    key it finds if none specified.
     #   * +:output+ if specified, it will write the output into it. It will be
     #     converted to a {GPGME::Data} object, so it could be a file for example.
+    #   * +:filename+ if specified will set the embedded file name of the
+    #     underlying {GPGME::Data} object. See Gnupg option --set-filename
+    #     for additional information.
     #   * +:mode+ Desired type of signature. Options are:
     #    - +GPGME::SIG_MODE_NORMAL+ for a normal signature. The default one if
     #      not specified.
@@ -238,6 +252,9 @@ module GPGME
       plain  = Data.new(text)
       output = Data.new(options[:output])
       mode   = options[:mode] || GPGME::SIG_MODE_NORMAL
+
+      plain.filename  = options[:filename] unless options[:filename].nil?
+      output.filename = options[:filename] unless options[:filename].nil?
 
       GPGME::Ctx.new(options) do |ctx|
         if options[:signer]
